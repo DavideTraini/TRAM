@@ -126,7 +126,7 @@ class Transformer_simple(nn.Module):
             
         return self.norm(x), mask_list
 
-class MultiViT(nn.Module):
+class TRAM(nn.Module):
     def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, n_patch, channels = 3, dim_head = 64):
         super().__init__()
         image_height, image_width = pair(image_size)

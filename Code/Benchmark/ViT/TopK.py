@@ -4,15 +4,17 @@ from torch import nn
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 
+
 # helpers
 
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)
 
+
 # classes
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, hidden_dim, dropout = 0.):
+    def __init__(self, dim, hidden_dim, dropout=0.):
         super().__init__()
         self.net = nn.Sequential(
             nn.LayerNorm(dim),
@@ -26,10 +28,11 @@ class FeedForward(nn.Module):
     def forward(self, x):
         return self.net(x)
 
+
 class Attention(nn.Module):
-    def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0.):
+    def __init__(self, dim, heads=8, dim_head=64, dropout=0.):
         super().__init__()
-        inner_dim = dim_head *  heads
+        inner_dim = dim_head * heads
         project_out = not (heads == 1 and dim_head == dim)
 
         self.heads = heads
@@ -37,10 +40,10 @@ class Attention(nn.Module):
 
         self.norm = nn.LayerNorm(dim)
 
-        self.attend = nn.Softmax(dim = -1)
+        self.attend = nn.Softmax(dim=-1)
         self.dropout = nn.Dropout(dropout)
 
-        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
+        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias=False)
 
         self.to_out = nn.Sequential(
             nn.Linear(inner_dim, dim),
@@ -50,8 +53,8 @@ class Attention(nn.Module):
     def forward(self, x):
         x = self.norm(x)
 
-        qkv = self.to_qkv(x).chunk(3, dim = -1)
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
+        qkv = self.to_qkv(x).chunk(3, dim=-1)
+        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h=self.heads), qkv)
 
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
 
@@ -62,15 +65,16 @@ class Attention(nn.Module):
         out = rearrange(out, 'b h n d -> b n (h d)')
         return self.to_out(out), attn
 
+
 class Transformer_topk(nn.Module):
-    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):
+    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout=0.):
         super().__init__()
         self.norm = nn.LayerNorm(dim)
         self.layers = nn.ModuleList([])
         for _ in range(depth):
             self.layers.append(nn.ModuleList([
-                Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout),
-                FeedForward(dim, mlp_dim, dropout = dropout)
+                Attention(dim, heads=heads, dim_head=dim_head, dropout=dropout),
+                FeedForward(dim, mlp_dim, dropout=dropout)
             ]))
 
     def forward(self, x, n_patch):
@@ -78,40 +82,31 @@ class Transformer_topk(nn.Module):
         B, N, D = x.shape
         for attn, ff in self.layers:
             emb, att = attn(x)
-            cls = torch.max(att[:,:,0,1:], dim=1).values
+            cls = torch.max(att[:, :, 0, 1:], dim=1).values
 
-          
-            tensor = cls.cpu().detach().numpy()
-            
-            # Plottare la distribuzione dei valori
-            plt.hist(tensor, bins=50, alpha=0.7, color='blue', edgecolor='black')
-            plt.xlabel('Valore')
-            plt.ylabel('Frequenza')
-            plt.title('Distribuzione dei valori del tensore')
-            plt.grid(True)
-            plt.show()
-
-            cls_val, cls_idx=torch.topk(cls, emb.shape[1]-1, largest = True) # n_patch[l]
+            cls_val, cls_idx = torch.topk(cls, n_patch[l], largest=True)
             mask, _ = torch.sort(cls_idx, dim=1)
-          
-            # sommiamo 1 a tutti i token e aggiungiamo il CLS (il cls è il token 0)
-            mask = mask + 1 # shape -> (B, K)
-            # colonna di zeri da concatenare a mask
-            zeros_column = torch.zeros(B, 1, dtype=mask.dtype, device=mask.device) # shape -> (B, 1)
-            # concatenazione
-            mask = torch.cat((zeros_column, mask), dim=1) # shape -> (B, K+1)
 
-            mask = mask.unsqueeze(2) # shape -> (B, K+1, 1)
-            mask_emb = mask.expand(B, mask.shape[1], D) # shape -> (B, K+1, D)
+            # sommiamo 1 a tutti i token e aggiungiamo il CLS (il cls è il token 0)
+            mask = mask + 1  # shape -> (B, K)
+            # colonna di zeri da concatenare a mask
+            zeros_column = torch.zeros(B, 1, dtype=mask.dtype, device=mask.device)  # shape -> (B, 1)
+            # concatenazione
+            mask = torch.cat((zeros_column, mask), dim=1)  # shape -> (B, K+1)
+
+            mask = mask.unsqueeze(2)  # shape -> (B, K+1, 1)
+            mask_emb = mask.expand(B, mask.shape[1], D)  # shape -> (B, K+1, D)
 
             x = emb.gather(1, mask_emb) + x.gather(1, mask_emb)
-      
+
             x = ff(x) + x
-            l+=1
+            l += 1
         return self.norm(x)
 
-class ViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, n_patch, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.):
+
+class TopK(nn.Module):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, n_patch, pool='cls',
+                 channels=3, dim_head=64, dropout=0., emb_dropout=0.):
         super().__init__()
         image_height, image_width = pair(image_size)
         patch_height, patch_width = pair(patch_size)
@@ -123,7 +118,7 @@ class ViT(nn.Module):
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
 
         self.to_patch_embedding = nn.Sequential(
-            Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
+            Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1=patch_height, p2=patch_width),
             nn.LayerNorm(patch_dim),
             nn.Linear(patch_dim, dim),
             nn.LayerNorm(dim),
@@ -144,14 +139,14 @@ class ViT(nn.Module):
         x = self.to_patch_embedding(img)
         b, n, _ = x.shape
 
-        cls_tokens = repeat(self.cls_token, '1 1 d -> b 1 d', b = b)
+        cls_tokens = repeat(self.cls_token, '1 1 d -> b 1 d', b=b)
         x = torch.cat((cls_tokens, x), dim=1)
         x += self.pos_embedding[:, :(n + 1)]
         x = self.dropout(x)
 
         x = self.transformer(x, self.n_patch)
 
-        x = x.mean(dim = 1) if self.pool == 'mean' else x[:, 0]
+        x = x.mean(dim=1) if self.pool == 'mean' else x[:, 0]
 
         x = self.to_latent(x)
         return self.mlp_head(x)

@@ -7,7 +7,9 @@ This is the official implementation of the paper: TRAM.
 ![Multilayer creation](Readme_imgs/Workflow.png)
 
 
-<img src="https://github.com/DavideTraini/TRAM/blob/main/Readme_imgs/ImmagineGitHub.png" width="100" height="100">
+<div style="text-align: center;">
+  <img src="https://github.com/DavideTraini/TRAM/blob/main/Readme_imgs/ImmagineGitHub.png" style="width: 570px; height: 430px;">
+</div>
 
 
 ## Usage
