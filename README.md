@@ -7,17 +7,7 @@ This is the official implementation of the paper: TRAM.
 ![Multilayer creation](Readme_imgs/Workflow.png)
 
 
-
-![Selected tokens 50 tench](Readme_imgs/0_50_tench-1.png)
-![Selected tokens 75 tench](Readme_imgs/0_75_tench-1.png)
-
-
-![Selected tokens 50 church](Readme_imgs/33_50_church-1.png)
-![Selected tokens 75 church](Readme_imgs/33_75_church-1.png)
-
-
-![Selected tokens 50 parachute](Readme_imgs/17_50_parachute-1.png)
-![Selected tokens 75 parachute](Readme_imgs/17_75_parachute-1.png)
+<img src="https://github.com/DavideTraini/TRAM/blob/main/Readme_imgs/ImmagineGitHub.png" width="100" height="100">
 
 
 ## Usage
