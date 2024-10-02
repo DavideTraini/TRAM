@@ -1,4 +1,4 @@
-# ViT-Visual-Interpretability
+# ViT-Pruning
 
 This is the official implementation of the paper: Efficient Token Pruning in Vision Transformers Using an Attention-Based Multilayer Network.
 
