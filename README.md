@@ -2,6 +2,16 @@
 
 This is the official implementation of the paper: Efficient Token Pruning in Vision Transformers Using an Attention-Based Multilayer Network.
 
+@article{marchetti2025efficient,
+  title={Efficient token pruning in Vision Transformers using an attention-based Multilayer Network},
+  author={Marchetti, Michele and Traini, Davide and Ursino, Domenico and Virgili, Luca},
+  journal={Expert Systems with Applications},
+  volume={279},
+  pages={127449},
+  year={2025},
+  publisher={Elsevier}
+}
+
 ## Abstract
 
 
